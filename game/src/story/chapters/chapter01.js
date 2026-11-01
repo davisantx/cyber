@@ -6,7 +6,7 @@ const decide = (prompt, options) => ({ type: 'choice', prompt, options });
 export const chapter01 = {
   id: 'chapter-01',
   number: 1,
-  revision: '1',
+  revision: '2',
   title: 'Três anos de preparação',
   protagonist: { id: 'andre', name: 'André' },
   context: 'Um concurso fictício na reta final de uma preparação de três anos.',
@@ -21,6 +21,10 @@ export const chapter01 = {
     correctedGroup: false,
     helpedGroup: false,
     rested: false,
+    practicedWeakPoint: false,
+    followedGroup: false,
+    helpedAtGate: false,
+    settledAtGate: false,
   },
   assets: {
     backgrounds: {
@@ -170,9 +174,38 @@ export const chapter01 = {
         narrate('No sábado, André seguiu a revisão que havia planejado. Ainda assim, voltava os olhos ao celular mais vezes do que gostaria.', { var: 'reorganizedStudy', equals: false }),
         say('Luana', 'No grupo, tudo parece urgente hoje. Eu vou deixar o cartão aberto.', 'pensativo'),
         say('André', 'O meu diz Escola das Palmeiras. Anotei até o ônibus.', 'normal'),
-        narrate('Às 18h, outra mensagem chegou. Dessa vez falava do local da prova.'),
+        narrate('Ainda havia uma hora de revisão antes de encerrar os estudos. André olhou da questão marcada para as mensagens no celular.'),
       ],
-      next: 'boato_local',
+      next: 'revisao_sabado',
+    },
+    revisao_sabado: {
+      act: 'Ato 4 · O tempo que resta',
+      setting: 'Quarto de estudos · sábado',
+      background: 'study-day',
+      entries: [
+        narrate('Antes da próxima matéria, André encontrou a questão que havia errado três vezes. Ao lado, o celular mostrava dezenas de mensagens novas do grupo.'),
+        say('Luana', 'Se aparecer um aviso oficial, eu te chamo. O que você quer fazer com esta hora?', 'pensativo'),
+        decide('Como André usa a próxima hora de revisão?', [
+          { id: 'questao', label: 'Resolver a questão difícil com calma e anotar o erro', to: 'questao_refeita', effects: { practicedWeakPoint: true } },
+          { id: 'grupo', label: 'Acompanhar as mensagens enquanto revisa', to: 'grupo_acompanhado', effects: { followedGroup: true } },
+        ]),
+      ],
+    },
+    questao_refeita: {
+      act: 'Ato 4 · O tempo que resta', setting: 'Quarto de estudos · sábado', background: 'study-day',
+      entries: [
+        narrate('André refez a questão sem consultar a resposta. Desta vez, identificou a palavra que sempre deixava passar e a anotou na margem.'),
+        think('Ainda posso errar na prova. Pelo menos agora sei onde prestar atenção.'),
+        narrate('Às 18h, chegou outra mensagem. Dessa vez falava do local da prova.'),
+      ], next: 'boato_local',
+    },
+    grupo_acompanhado: {
+      act: 'Ato 4 · O tempo que resta', setting: 'Quarto de estudos · sábado', background: 'study-day',
+      entries: [
+        narrate('A cada parágrafo, uma notificação interrompia André. Uma pessoa perguntava sobre canetas; outra repetia a postagem já desmentida sobre a banca.'),
+        say('André', 'Li a mesma página três vezes e ainda não terminei.', 'triste'),
+        narrate('Ele silenciou o aparelho por alguns minutos. Quando voltou a olhar, já eram 18h e havia uma mensagem nova sobre o local da prova.'),
+      ], next: 'boato_local',
     },
     boato_local: {
       act: 'Ato 4 · O segundo boato',
@@ -345,7 +378,32 @@ export const chapter01 = {
         say('André', 'Está tudo aqui. Volto depois do almoço.', 'normal'),
         narrate('O ônibus parou diante da Escola das Palmeiras. André viu outras pessoas com documentos na mão e entrou na fila.'),
       ],
-      next: 'prova',
+      next: 'entrada_escola',
+    },
+    entrada_escola: {
+      act: 'Ato 5 · O dia da prova', setting: 'Escola das Palmeiras · manhã', background: 'morning',
+      entries: [
+        narrate('Perto do portão, uma candidata mostrava no celular o print do Centro Cívico. O próprio cartão dela ainda não tinha aberto. A fila começava a andar.'),
+        think('Há tempo para uma explicação curta. Também preciso encontrar minha sala.'),
+        decide('O que André faz antes de entrar?', [
+          { id: 'ajudar', label: 'Mostrar como abrir o cartão oficial e indicar a entrada', to: 'entrada_ajuda', effects: { helpedAtGate: true } },
+          { id: 'entrar', label: 'Entrar, localizar a sala e se preparar para a prova', to: 'entrada_calma', effects: { settledAtGate: true } },
+        ]),
+      ],
+    },
+    entrada_ajuda: {
+      act: 'Ato 5 · O dia da prova', setting: 'Escola das Palmeiras · manhã', background: 'morning',
+      entries: [
+        say('André', 'Abra o Portal do Candidato pelo endereço do edital. O local certo está no seu cartão.', 'normal'),
+        narrate('A candidata encontrou a escola no documento e agradeceu. André entrou logo atrás dela, ainda com tempo de procurar a sala.'),
+      ], next: 'prova',
+    },
+    entrada_calma: {
+      act: 'Ato 5 · O dia da prova', setting: 'Escola das Palmeiras · manhã', background: 'morning',
+      entries: [
+        narrate('André localizou sua sala e separou o documento. Luana, que estava perto da fila, ajudou a candidata a abrir o próprio cartão.'),
+        think('Ela recebeu ajuda. Agora posso me concentrar no que vim fazer.'),
+      ], next: 'prova',
     },
     prova: {
       act: 'Ato 6 · A prova',
@@ -355,6 +413,8 @@ export const chapter01 = {
         narrate('Ele chegou com tempo para encontrar a sala. O coração ainda acelerava, mas agora por um motivo que conhecia.'),
         narrate('Na carteira, alinhou as canetas e o documento. A fiscal distribuiu as provas; o papel fez um ruído seco ao tocar a mesa.'),
         think('Não preciso saber tudo. Preciso começar pela primeira questão.', 'pensativo'),
+        narrate('Na questão que tinha repetido em casa, André reconheceu a palavra anotada na margem e leu o enunciado inteiro antes de responder.', { var: 'practicedWeakPoint', equals: true }),
+        narrate('Uma questão lembrava a página interrompida pelas notificações. André respirou e voltou ao enunciado, sem tentar recuperar a hora perdida.', { var: 'followedGroup', equals: true }),
         narrate('Uma pergunta parecia familiar. Outra exigiu mais tempo. André seguiu página por página, sem saber ainda o resultado.'),
         narrate('Quando saiu pelo portão, a manhã estava mais quente. Pela primeira vez em semanas, não havia nada a revisar.'),
       ],
@@ -416,6 +476,8 @@ export const chapter01 = {
         narrate('Ao sair da escola, André encontrou uma mensagem de Luana: “Também consegui fazer a prova. Depois a gente compara as questões.”'),
         say('André', 'Depois. Hoje eu não quero comparar nada.', 'feliz'),
         narrate('Não sabia o resultado. Sabia que tinha protegido a chance pela qual estudara durante três anos.'),
+        narrate('No portão, a candidata a quem mostrara o cartão acenou antes de pegar o ônibus.', { var: 'helpedAtGate', equals: true }),
+        narrate('Ter encontrado a sala cedo lhe dera alguns minutos de silêncio antes da prova.', { var: 'settledAtGate', equals: true }),
         say('Mãe', 'O almoço de domingo ainda está de pé.', 'feliz'),
         say('André', 'Dessa vez eu apareço.', 'feliz'),
         narrate('Ele guardou o cartão entre os cadernos e fechou a gaveta com cuidado.'),

@@ -6,7 +6,7 @@ const decide = (prompt, options) => ({ type: 'choice', prompt, options });
 export const chapter02 = {
   id: 'chapter-02',
   number: 2,
-  revision: '1',
+  revision: '2',
   title: 'O que chegou ao grupo',
   protagonist: { id: 'lia', name: 'Lia' },
   context: 'Uma chamada ambígua sobre um artista fictício vira notícia de morte no grupo da escola.',
@@ -22,6 +22,10 @@ export const chapter02 = {
     publicCorrection: false,
     apologized: false,
     preparedGuide: false,
+    reachedOtherClass: false,
+    askedTeacherToShare: false,
+    preparedSourceCard: false,
+    rehearsedExplanation: false,
   },
   assets: {
     backgrounds: {
@@ -160,7 +164,7 @@ export const chapter02 = {
         narrate('Duas pessoas abriram os links e corrigiram as próprias mensagens. A conversa não parou de imediato, mas agora havia algo concreto para consultar.'),
         say('Tomás', 'Obrigado. Eu só tinha recebido o print.', 'aliviado'),
       ],
-      next: 'ensaio',
+      next: 'alcance_correcao',
     },
     resposta_curta: {
       act: 'Ato 3 · A mensagem muda de forma',
@@ -171,7 +175,7 @@ export const chapter02 = {
         narrate('Vieram respostas rápidas: “quem disse?”, “tem link?” e “mas a capa está em todo lugar”. Lia tinha conferido, mas sua mensagem não mostrava como.'),
         think('Eu esperava que acreditassem em mim. Eles só viram outra frase solta.'),
       ],
-      next: 'ensaio',
+      next: 'alcance_correcao',
     },
     resposta_privada: {
       act: 'Ato 3 · A mensagem muda de forma',
@@ -183,7 +187,40 @@ export const chapter02 = {
         narrate('Os dois ficaram alguns minutos conversando. No grupo maior, o print continuou a circular sem a explicação.'),
         think('Falar com ele ajudou. Ainda tem gente vendo só a capa.'),
       ],
-      next: 'ensaio',
+      next: 'alcance_correcao',
+    },
+    alcance_correcao: {
+      act: 'Ato 3 · A mensagem muda de forma', setting: 'Corredor da escola · intervalo', background: 'corridor',
+      entries: [
+        narrate('Uma colega contou que a imagem já estava no grupo da turma vizinha. Lá, ninguém tinha visto a publicação de Ravi.'),
+        think('A explicação no nosso grupo talvez não chegue à mesma velocidade que o print.'),
+        decide('Como Lia tenta levar a correção além da própria turma?', [
+          { id: 'vizinha', label: 'Enviar as publicações completas à representante da turma vizinha', to: 'correcao_vizinha', effects: { reachedOtherClass: true } },
+          { id: 'professora', label: 'Pedir à professora Nádia que ajude a avisar as outras salas', to: 'correcao_professora', effects: { askedTeacherToShare: true } },
+          { id: 'depois', label: 'Esperar o ensaio para decidir como falar do assunto', to: 'correcao_adiada', effects: {} },
+        ]),
+      ],
+    },
+    correcao_vizinha: {
+      act: 'Ato 3 · A mensagem muda de forma', setting: 'Celular · intervalo', background: 'digital',
+      entries: [
+        say('Lia', 'O vídeo fala de um show cancelado. Aqui estão ele inteiro e o aviso do Ravi; você pode levar os dois junto com a correção?', 'normal'),
+        narrate('A representante respondeu que mostraria as publicações à turma. Lia não podia saber quem já tinha repassado a imagem, mas a resposta começava a seguir o mesmo caminho.'),
+      ], next: 'ensaio',
+    },
+    correcao_professora: {
+      act: 'Ato 3 · A mensagem muda de forma', setting: 'Corredor da escola · intervalo', background: 'corridor',
+      entries: [
+        say('Professora Nádia', 'Posso avisar os professores das outras salas. Me mostra o vídeo e a publicação original?', 'pensativo'),
+        narrate('Lia abriu as duas fontes. Nádia levou o esclarecimento à sala dos professores antes de começar o ensaio.'),
+      ], next: 'ensaio',
+    },
+    correcao_adiada: {
+      act: 'Ato 3 · A mensagem muda de forma', setting: 'Corredor da escola · intervalo', background: 'corridor',
+      entries: [
+        narrate('Lia guardou os links para o ensaio. Enquanto isso, outra pessoa perguntou no corredor se a apresentação de sexta seria uma homenagem.'),
+        think('Ainda dá para explicar. Quanto mais o print viaja, mais gente precisa ouvir a resposta.'),
+      ], next: 'ensaio',
     },
     ensaio: {
       act: 'Ato 4 · O microfone está aberto',
@@ -209,7 +246,7 @@ export const chapter02 = {
         narrate('Ela não citou nomes nem leu mensagens da turma em voz alta. Tomás recolocou a música na lista.'),
         say('Tomás', 'A gente pode tocar essa na sexta, então.'),
       ],
-      next: 'depois',
+      next: 'preparo_feira',
     },
     radio_segue: {
       act: 'Ato 4 · O microfone está aberto',
@@ -220,7 +257,31 @@ export const chapter02 = {
         say('Tomás', 'Não precisamos falar disso no microfone. Mas talvez falte responder no grupo.', 'pensativo'),
         think('A programação saiu. A conversa continua em outro lugar.'),
       ],
-      next: 'depois',
+      next: 'preparo_feira',
+    },
+    preparo_feira: {
+      act: 'Ato 4 · O microfone está aberto', setting: 'Rádio da escola · tarde', background: 'radio',
+      entries: [
+        say('Tomás', 'Na sexta, ainda podem perguntar sobre aquela capa. O que deixamos pronto para responder?', 'pensativo'),
+        decide('Como Lia e Tomás preparam a explicação para a feira?', [
+          { id: 'fontes', label: 'Anotar os endereços das publicações para mostrar a quem perguntar', to: 'fontes_anotadas', effects: { preparedSourceCard: true } },
+          { id: 'fala', label: 'Ensaiar uma explicação curta para a rádio', to: 'fala_ensaiada', effects: { rehearsedExplanation: true } },
+        ]),
+      ],
+    },
+    fontes_anotadas: {
+      act: 'Ato 4 · O microfone está aberto', setting: 'Rádio da escola · tarde', background: 'radio',
+      entries: [
+        narrate('Lia anotou o perfil do artista e o vídeo completo numa folha ao lado da lista de músicas.'),
+        say('Tomás', 'Se vier outra pergunta, mostramos onde conferimos.', 'normal'),
+      ], next: 'depois',
+    },
+    fala_ensaiada: {
+      act: 'Ato 4 · O microfone está aberto', setting: 'Rádio da escola · tarde', background: 'radio',
+      entries: [
+        say('Lia', 'A capa sugeria uma coisa; o vídeo completo e o aviso do Ravi dizem que ele só vai pausar os shows.', 'normal'),
+        say('Tomás', 'Cabe entre duas músicas. E se pedirem, a gente abre as publicações.', 'feliz'),
+      ], next: 'depois',
     },
     depois: {
       act: 'Ato 5 · O que se faz depois',
@@ -311,6 +372,10 @@ export const chapter02 = {
       entries: [
         narrate('Na sexta-feira, a feira começou com mesas tortas, cartazes feitos à mão e a caixa de som finalmente funcionando.'),
         narrate('Alguns alunos ainda tinham apenas a mensagem curta de Lia. Ela mostrou as publicações completas a quem perguntou.', { var: 'terseReply', equals: true }),
+        narrate('A representante da turma vizinha contou que havia enviado as duas fontes junto da correção.', { var: 'reachedOtherClass', equals: true }),
+        narrate('Nádia disse que outros professores já tinham explicado o cancelamento nas salas.', { var: 'askedTeacherToShare', equals: true }),
+        narrate('Lia deixou a folha com os endereços das publicações ao lado do microfone, pronta para quem quisesse conferir.', { var: 'preparedSourceCard', equals: true }),
+        narrate('Antes de ligar o microfone, Lia repetiu a explicação que havia ensaiado com Tomás.', { var: 'rehearsedExplanation', equals: true }),
         narrate('Tomás trouxe a irmã para ouvir a rádio. Ela já sabia que o show fora cancelado e queria entender por que tanta gente tinha pensado em outra coisa.'),
         narrate('Lia ouviu a primeira música começar. Lembrou de como uma interrogação havia desaparecido a cada repasse.'),
       ],

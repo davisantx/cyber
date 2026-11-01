@@ -12,6 +12,7 @@ import {
   getCurrentScene,
   getStageCharacters,
   isValidProgress,
+  matchesCondition,
 } from './engine.js';
 import { CHAPTER_LIST, CHAPTERS } from './registry.js';
 
@@ -41,7 +42,7 @@ test('every scene has an existing illustrated background', () => {
   }
 });
 
-function play(first, second, group, last) {
+function play(first, second, group, last, extraPicks = {}) {
   let progress = createInitialProgress();
   const picks = {
     boato_banca: first,
@@ -49,6 +50,9 @@ function play(first, second, group, last) {
     reparar_grupo: group,
     apoio_grupo: group,
     ultima_noite: last,
+    revisao_sabado: 'questao',
+    entrada_escola: 'entrar',
+    ...extraPicks,
   };
   for (let turns = 0; turns < 300; turns += 1) {
     if (progress.phase === 'interlude') return progress;
@@ -68,7 +72,7 @@ test('all combinations of chapter 1 decisions reach chapter 2', () => {
           const ending = play(first, second, group, last);
           assert.equal(ending.phase, 'interlude');
           assert.ok(ending.sceneId.startsWith('fim_'));
-          assert.equal(ending.choices.length, 4);
+          assert.equal(ending.choices.length, 6);
           assert.equal(isValidProgress(ending), true);
           const next = finishInterlude(ending);
           assert.equal(next.phase, 'story');
@@ -80,7 +84,7 @@ test('all combinations of chapter 1 decisions reach chapter 2', () => {
   }
 });
 
-function playChapter2(first, second, third, fourth) {
+function playChapter2(first, second, third, fourth, extraPicks = {}) {
   let progress = createInitialProgress('chapter-02');
   const picks = {
     recomendacao: first,
@@ -88,6 +92,9 @@ function playChapter2(first, second, third, fourth) {
     ensaio: third,
     reparar_grupo: fourth,
     conversa_final: fourth,
+    alcance_correcao: 'depois',
+    preparo_feira: 'fontes',
+    ...extraPicks,
   };
   for (let turns = 0; turns < 300; turns += 1) {
     if (progress.phase === 'interlude') return progress;
@@ -105,7 +112,7 @@ test('all combinations of chapter 2 decisions reach a valid ending', () => {
         for (const fourth of first === 'repassar' ? ['assumir', 'apagar'] : ['guia', 'conversa']) {
           const ending = playChapter2(first, second, third, fourth);
           assert.equal(ending.phase, 'interlude');
-          assert.equal(ending.choices.length, 4);
+          assert.equal(ending.choices.length, 6);
           assert.equal(isValidProgress(ending), true);
           const next = finishInterlude(ending);
           assert.equal(next.chapterId, 'chapter-03');
@@ -123,7 +130,7 @@ test('chapter 2 endings reflect repair and group choices', () => {
   assert.equal(playChapter2('perfil', 'privado', 'seguir', 'conversa').sceneId, 'fim_cotidiano');
 });
 
-function playChapter3(first, second, third, fourth) {
+function playChapter3(first, second, third, fourth, extraPicks = {}) {
   let progress = createInitialProgress('chapter-03');
   const picks = {
     anuncio: first,
@@ -131,6 +138,9 @@ function playChapter3(first, second, third, fourth) {
     mensagem_grupo: third,
     escolha_recuperacao: fourth,
     escolha_apoio: fourth,
+    sinais_site: 'permissoes',
+    alcance_link: 'esperar',
+    ...extraPicks,
   };
   for (let turns = 0; turns < 300; turns += 1) {
     if (progress.phase === 'interlude') return progress;
@@ -141,14 +151,14 @@ function playChapter3(first, second, third, fourth) {
   throw new Error('Chapter 3 did not reach its ending.');
 }
 
-test('all 54 combinations of chapter 3 decisions reach a valid ending', () => {
+test('all 54 combinations of the original chapter 3 decisions reach a valid ending', () => {
   for (const first of ['origem', 'lia', 'abrir']) {
     for (const second of ['fechar', 'entrar', 'negar']) {
       for (const third of ['grupo', 'lia', 'apagar']) {
         for (const fourth of second === 'entrar' ? ['proteger', 'so_apagar'] : ['ajudar', 'conversar']) {
           const ending = playChapter3(first, second, third, fourth);
           assert.equal(ending.phase, 'interlude');
-          assert.equal(ending.choices.length, 4);
+          assert.equal(ending.choices.length, 6);
           assert.equal(isValidProgress(ending), true);
           assert.equal(finishInterlude(ending).phase, 'awaitingNext');
         }
@@ -191,6 +201,87 @@ test('sharing, correcting, and resting change later events and the ending', () =
   assert.equal(tired.sceneId, 'fim_cansaco');
   assert.equal(tired.variables.reorganizedStudy, true);
   assert.equal(tired.variables.rested, false);
+});
+
+test('new chapter 1 decisions change study and arrival at the exam', () => {
+  const practiced = play('portal', 'cartao', 'orientar', 'dormir', {
+    revisao_sabado: 'questao', entrada_escola: 'ajudar',
+  });
+  const distracted = play('portal', 'cartao', 'orientar', 'dormir', {
+    revisao_sabado: 'grupo', entrada_escola: 'entrar',
+  });
+  assert.equal(practiced.variables.practicedWeakPoint, true);
+  assert.equal(practiced.variables.helpedAtGate, true);
+  assert.equal(distracted.variables.followedGroup, true);
+  assert.equal(distracted.variables.settledAtGate, true);
+  assert.equal(practiced.choices.length, 6);
+  assert.equal(distracted.choices.length, 6);
+});
+
+test('new chapter 2 decisions carry corrections and prepare the fair', () => {
+  for (const [reach, key] of [['vizinha', 'reachedOtherClass'], ['professora', 'askedTeacherToShare'], ['depois', null]]) {
+    for (const [prep, prepKey] of [['fontes', 'preparedSourceCard'], ['fala', 'rehearsedExplanation']]) {
+      const ending = playChapter2('abrir', 'contexto', 'explicar', 'guia', {
+        alcance_correcao: reach, preparo_feira: prep,
+      });
+      assert.equal(ending.phase, 'interlude');
+      assert.equal(ending.choices.length, 6);
+      if (key) assert.equal(ending.variables[key], true);
+      assert.equal(ending.variables[prepKey], true);
+    }
+  }
+});
+
+test('new chapter 3 decisions reveal site clues and respond to a second copy', () => {
+  for (const [signal, key] of [['permissoes', 'readPermissions'], ['ajuda', 'checkedVitraHelp'], ['contador', 'followedCountdown']]) {
+    for (const [reach, reachKey] of [['origem', 'tracedLink'], ['aviso', 'warnedOtherGroup'], ['esperar', null]]) {
+      const ending = playChapter3('abrir', 'fechar', 'grupo', 'ajudar', {
+        sinais_site: signal, alcance_link: reach,
+      });
+      assert.equal(ending.phase, 'interlude');
+      assert.equal(ending.choices.length, 6);
+      assert.equal(ending.variables[key], true);
+      if (reachKey) assert.equal(ending.variables[reachKey], true);
+    }
+  }
+});
+
+test('every combination of all six decisions reaches an ending and every scene is reachable', () => {
+  const expectedRoutes = { 'chapter-01': 144, 'chapter-02': 216, 'chapter-03': 486 };
+  for (const chapter of CHAPTER_LIST) {
+    const pending = [{ progress: createInitialProgress(chapter.id), turns: 0 }];
+    const visitedScenes = new Set();
+    let endings = 0;
+
+    while (pending.length) {
+      const { progress, turns } = pending.pop();
+      assert.ok(turns < 300, `${chapter.id}: path did not finish`);
+      assert.equal(isValidProgress(progress), true, `${chapter.id}: invalid progress at ${progress.sceneId}`);
+      visitedScenes.add(progress.sceneId);
+      if (progress.phase === 'interlude') {
+        assert.equal(progress.choices.length, 6, `${chapter.id}: missing decision`);
+        endings += 1;
+        continue;
+      }
+
+      const entry = getCurrentEntry(progress);
+      assert.ok(entry, `${chapter.id}: missing entry at ${progress.sceneId}`);
+      if (entry.type === 'choice') {
+        const available = entry.options.filter((option) => matchesCondition(option.when, progress.variables));
+        assert.ok(available.length >= 2, `${chapter.id}: choice without alternatives at ${progress.sceneId}`);
+        for (const option of available) pending.push({ progress: choose(progress, option.id), turns: turns + 1 });
+      } else {
+        pending.push({ progress: advance(progress), turns: turns + 1 });
+      }
+    }
+
+    assert.deepEqual(
+      [...visitedScenes].sort(),
+      Object.keys(chapter.scenes).sort(),
+      `${chapter.id}: unreachable scenes`
+    );
+    assert.equal(endings, expectedRoutes[chapter.id], `${chapter.id}: unexpected number of routes`);
+  }
 });
 
 test('invalid destinations and stale content revisions cannot be resumed', () => {

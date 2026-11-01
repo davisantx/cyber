@@ -6,7 +6,7 @@ const decide = (prompt, options) => ({ type: 'choice', prompt, options });
 export const chapter03 = {
   id: 'chapter-03',
   number: 3,
-  revision: '1',
+  revision: '2',
   title: 'Quem viu meu perfil?',
   protagonist: { id: 'nina', name: 'Nina' },
   context: 'Um aplicativo que promete revelar visitantes do perfil pede acesso à conta e às mensagens.',
@@ -23,6 +23,11 @@ export const chapter03 = {
     deletedMessage: false,
     securedAccount: false,
     helpedFriend: false,
+    readPermissions: false,
+    checkedVitraHelp: false,
+    followedCountdown: false,
+    tracedLink: false,
+    warnedOtherGroup: false,
   },
   assets: {
     backgrounds: {
@@ -93,20 +98,52 @@ export const chapter03 = {
       entries: [
         narrate('Nina tocou no nome do anunciante. A página não mostrava vínculo com a Vitra, nem explicava como obteria a suposta lista de visitantes.'),
         think('Se eles sabem tanto sobre meu perfil, por que precisam que eu entre com a senha?', 'pensativo'),
-      ], next: 'pedido_acesso',
+      ], next: 'sinais_site',
     },
     ouviu_lia: {
       act: 'Ato 2 · A promessa', setting: 'Corredor da escola · sexta-feira', background: 'corridor',
       entries: [
         say('Lia', 'O anúncio parece da Vitra, mas o endereço não é o mesmo. O que ele pede para funcionar?', 'pensativo'),
         say('Nina', 'Vou ler a tela antes de tocar em qualquer campo.', 'normal'),
-      ], next: 'pedido_acesso',
+      ], next: 'sinais_site',
     },
     abriu_anuncio: {
       act: 'Ato 2 · A promessa', setting: 'Celular · corredor da escola', background: 'digital',
       entries: [
         narrate('Nina abriu a página. Uma animação de retratos girou por alguns segundos e parou sobre um botão: “Liberar resultado”.'),
         think('A lista está sempre quase pronta. Ainda não vi nenhuma explicação.', 'pensativo'),
+      ], next: 'sinais_site',
+    },
+    sinais_site: {
+      act: 'Ato 2 · A promessa', setting: 'Celular · corredor da escola', background: 'digital',
+      entries: [
+        narrate('Antes do botão final, havia um texto pequeno sobre acesso à conta e um contador que pressionava Nina a continuar.'),
+        decide('O que Nina confere antes de decidir sobre o acesso?', [
+          { id: 'permissoes', label: 'Ler quais dados o site quer usar', to: 'leu_permissoes', effects: { readPermissions: true } },
+          { id: 'ajuda', label: 'Abrir a ajuda da Vitra pelo aplicativo oficial', to: 'ajuda_vitra', effects: { checkedVitraHelp: true } },
+          { id: 'contador', label: 'Seguir para o resultado antes de o contador acabar', to: 'seguiu_contador', effects: { followedCountdown: true } },
+        ]),
+      ],
+    },
+    leu_permissoes: {
+      act: 'Ato 2 · A promessa', setting: 'Celular · corredor da escola', background: 'digital',
+      entries: [
+        narrate('O texto citava contatos e mensagens, mas não explicava por que seriam necessários para mostrar visitantes.'),
+        think('A lista é a promessa; meus dados são o que ele pede de verdade.'),
+      ], next: 'pedido_acesso',
+    },
+    ajuda_vitra: {
+      act: 'Ato 2 · A promessa', setting: 'Celular · corredor da escola', background: 'digital',
+      entries: [
+        narrate('Nina abriu a ajuda dentro da Vitra. Não havia uma função para listar visitantes do perfil nem indicação do Espelho Social como parceiro.'),
+        say('Nina', 'Se fosse um recurso da Vitra, eu encontraria alguma explicação aqui.', 'pensativo'),
+      ], next: 'pedido_acesso',
+    },
+    seguiu_contador: {
+      act: 'Ato 2 · A promessa', setting: 'Celular · corredor da escola', background: 'digital',
+      entries: [
+        narrate('Nina avançou. O contador recomeçou na tela seguinte, como se a oferta fosse expirar outra vez.'),
+        think('Ele quer que eu tenha pressa. Ainda posso parar e ler o que aparece.'),
       ], next: 'pedido_acesso',
     },
     pedido_acesso: {
@@ -165,7 +202,7 @@ export const chapter03 = {
       entries: [
         say('Nina', 'Esse endereço é de outro site. Ele pede a senha da Vitra e acesso às mensagens; não consegui confirmar a lista que promete. Não abram por minha causa.', 'pensativo'),
         narrate('Alguns colegas agradeceram. Uma captura do link já tinha ido para outro grupo, então Nina pediu que levassem o aviso junto.'),
-      ], next: 'passo_seguinte',
+      ], next: 'alcance_link',
     },
     aviso_lia: {
       act: 'Ato 4 · A mensagem que chegou', setting: 'Corredor da escola · fim da feira', background: 'corridor',
@@ -173,13 +210,45 @@ export const chapter03 = {
         say('Nina', 'Quero entender se minha conta foi usada. Você fica comigo enquanto eu confiro?', 'triste', { var: 'gavePassword', equals: true }),
         say('Nina', 'O link chegou pelo perfil de outra pessoa. Vamos ajudar sem expor esse colega?', 'pensativo', { var: 'gavePassword', equals: false }),
         say('Lia', 'Fico. Depois avisamos também quem está no grupo.', 'feliz'),
-      ], next: 'passo_seguinte',
+      ], next: 'alcance_link',
     },
     mensagem_apagada: {
       act: 'Ato 4 · A mensagem que chegou', setting: 'Grupo da turma · fim da feira', background: 'digital',
       entries: [
         narrate('Nina apagou a mensagem da própria conversa. Uma captura ainda aparecia nas respostas de outros colegas.'),
         think('Sumiu da minha tela, mas eles ainda estão vendo o endereço.', 'triste'),
+      ], next: 'alcance_link',
+    },
+    alcance_link: {
+      act: 'Ato 4 · A mensagem que chegou', setting: 'Grupo da turma · fim da feira', background: 'digital',
+      entries: [
+        narrate('Tomás mostrou outra captura: a mesma mensagem havia chegado ao grupo da irmã. Ela queria saber se podia confiar no endereço.'),
+        decide('Como Nina lida com essa nova cópia do link?', [
+          { id: 'origem', label: 'Perguntar a quem recebeu de qual perfil saiu a mensagem', to: 'rastreou_link', effects: { tracedLink: true } },
+          { id: 'aviso', label: 'Enviar um aviso à turma da irmã de Tomás com o que o site pede', to: 'avisou_outra_turma', effects: { warnedOtherGroup: true } },
+          { id: 'esperar', label: 'Guardar a captura e cuidar primeiro da conversa atual', to: 'guardou_captura', effects: {} },
+        ]),
+      ],
+    },
+    rastreou_link: {
+      act: 'Ato 4 · A mensagem que chegou', setting: 'Grupo da turma · fim da feira', background: 'digital',
+      entries: [
+        narrate('A irmã de Tomás conferiu o remetente e respondeu. A captura vinha do perfil que já tinha enviado o link ao grupo da turma.'),
+        think('Agora sabemos por onde essa cópia passou. Ainda precisamos avisar quem a recebeu.'),
+      ], next: 'passo_seguinte',
+    },
+    avisou_outra_turma: {
+      act: 'Ato 4 · A mensagem que chegou', setting: 'Grupo da turma · fim da feira', background: 'digital',
+      entries: [
+        say('Nina', 'Esse endereço é de outro site. Ele pede senha e acesso a mensagens antes de mostrar qualquer lista. Não digitem dados lá.', 'normal'),
+        narrate('Tomás encaminhou o aviso à irmã, que o publicou ao lado da captura original.'),
+      ], next: 'passo_seguinte',
+    },
+    guardou_captura: {
+      act: 'Ato 4 · A mensagem que chegou', setting: 'Corredor da escola · fim da feira', background: 'corridor',
+      entries: [
+        narrate('Nina guardou a captura e voltou ao próprio aplicativo. A irmã de Tomás ainda esperava uma resposta sobre o link.'),
+        think('Preciso resolver minha conta, se ela foi usada. Depois, essa conversa também vai precisar de contexto.'),
       ], next: 'passo_seguinte',
     },
     passo_seguinte: {
@@ -247,6 +316,11 @@ export const chapter03 = {
       entries: [
         narrate('A feira terminou, mas o anúncio continuou aparecendo em outras telas. Nina sabia agora reconhecer a promessa e o pedido escondido atrás dela.'),
         narrate('O aviso de Nina alcançou pessoas que tinham recebido o link como se fosse recomendação de um amigo.', { var: 'warnedGroup', equals: true }),
+        narrate('Ler as permissões deixou claro por que uma lista de visitantes não justificava acesso às conversas.', { var: 'readPermissions', equals: true }),
+        narrate('A ajuda da Vitra não apresentava aquela função; Nina tinha uma referência oficial para mostrar a quem perguntasse.', { var: 'checkedVitraHelp', equals: true }),
+        narrate('O contador tinha recomeçado quando ela avançou. A urgência fazia parte da página, não da necessidade de Nina.', { var: 'followedCountdown', equals: true }),
+        narrate('A origem da captura estava identificada; faltava levar o aviso a quem tinha recebido aquela cópia.', { all: [{ var: 'tracedLink', equals: true }, { var: 'warnedOtherGroup', equals: false }] }),
+        narrate('A irmã de Tomás recebeu o aviso junto da captura e pôde responder no próprio grupo.', { var: 'warnedOtherGroup', equals: true }),
         narrate('Nina ainda precisaria contar ao grupo o que havia descoberto; falar só com uma pessoa não alcançava todas as cópias.', { all: [{ var: 'warnedGroup', equals: false }, { var: 'warnedLia', equals: true }] }),
         narrate('Na conversa, o silêncio deixou a captura circular sem contexto por mais tempo.', { var: 'deletedMessage', equals: true }),
       ],
