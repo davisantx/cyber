@@ -1,4 +1,17 @@
-# Validação da versão anterior com blockout
+# Validação
+
+## Correções de estabilidade — 02/11/2026
+
+- Testes do motor e persistência: 27 testes, incluindo 846 caminhos narrativos, armazenamento bloqueado, falta de espaço, backups sucessivos e rejeição de progresso incoerente.
+- Testes de interface: 23 testes passaram no Chrome com Playwright sobre o build de produção, incluindo leitura, teclado, histórico, interlúdio, rolagem de textos longos, atualização do progresso ao recuperar foco e armazenamento bloqueado.
+- A compilação de produção passou com Vite 6.4.5; `npm audit` não reportou vulnerabilidades nas dependências verificadas.
+- A matriz de escolhas cobre 320×568, 390×844, 640×360, 844×390 e 1366×768 nos modos Padrão, Grande e Projetor. Cada alternativa é rolada até a área visível e verificada como alvo de clique; a terceira opção é selecionada.
+- A inspeção visual no Chrome confirmou os controles separados dos nomes em 390×844 e a terceira alternativa acessível em 844×390 no modo Projetor. Também foi revista uma cena em 1366×768.
+- O script `scripts/recortar_sprites_2.py` foi executado em uma cópia temporária com a ficha original e gerou os treze PNGs esperados, sem modificar a arte publicada.
+- O workflow em `.github/workflows/test.yml` executa testes e build em novos pushes e pull requests. A execução remota depende do envio ao GitHub; a validação desta revisão foi local.
+- Não foi realizada homologação completa com leitores de tela, outros navegadores ou o público-alvo.
+
+## Histórico: versão anterior com blockout
 
 - O conteúdo acadêmico foi preservado. Na época desta validação, `../README.md` continha um PDF apesar da extensão; posteriormente, foi convertido para Markdown. `Projeto_Cyber_PSOC_ADS.pdf` e `docs/prototipo/` não estavam presentes. Os documentos correspondentes disponíveis na raiz foram consultados.
 - `npm test`: 3 testes passaram, cobrindo persistência/normalização de preferências, validação do progresso e cálculo da navegação por setas.

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { finishInterlude } from '../engine.js';
 import { getChapter } from '../registry.js';
 
-export default function InterludeScreen({ progress, scene, reducedMotion, onProgress, onOpenChapters }) {
+export default function InterludeScreen({ progress, scene, reducedMotion, paused = false, onProgress, onOpenChapters }) {
   const completed = useRef(false);
   const lastLine = scene.entries.at(-1);
   const currentChapter = getChapter(progress.chapterId);
@@ -10,15 +10,16 @@ export default function InterludeScreen({ progress, scene, reducedMotion, onProg
   const background = currentChapter?.assets.backgrounds?.[scene.background];
 
   const finish = useCallback(() => {
-    if (completed.current) return;
+    if (completed.current || paused) return;
     completed.current = true;
     onProgress(finishInterlude(progress));
-  }, [onProgress, progress]);
+  }, [onProgress, paused, progress]);
 
   useEffect(() => {
+    if (paused) return undefined;
     const timer = setTimeout(finish, reducedMotion ? 1800 : 3600);
     return () => clearTimeout(timer);
-  }, [finish, reducedMotion]);
+  }, [finish, paused, reducedMotion]);
 
   return (
     <main className={'story-stage story-stage--' + scene.background + ' interlude-screen' + (reducedMotion ? ' interlude-screen--reduced' : '')} style={background ? { backgroundImage: `url("${import.meta.env.BASE_URL + background}")`, backgroundPosition: 'center', backgroundSize: 'cover' } : undefined}>

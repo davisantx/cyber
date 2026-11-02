@@ -10,7 +10,9 @@ export default function ModalShell({ title, label, onClose, returnLabel = 'VOLTA
     const onKey = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         onClose();
+        return;
       }
       if (event.key !== 'Tab' || !dialog) return;
       const focusable = [...dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]')];

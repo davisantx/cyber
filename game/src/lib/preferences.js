@@ -29,16 +29,18 @@ export function normalizePreferences(value) {
   return normalized;
 }
 
-export function readPreferences(storage = globalThis.localStorage) {
+export function readPreferences(storage) {
   try {
+    if (storage === undefined) storage = globalThis.localStorage;
     return normalizePreferences(JSON.parse(storage.getItem(PREFERENCES_KEY)));
   } catch {
     return { ...DEFAULT_PREFERENCES };
   }
 }
 
-export function writePreferences(value, storage = globalThis.localStorage) {
+export function writePreferences(value, storage) {
   try {
+    if (storage === undefined) storage = globalThis.localStorage;
     storage.setItem(PREFERENCES_KEY, JSON.stringify(normalizePreferences(value)));
     return true;
   } catch {

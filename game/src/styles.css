@@ -409,7 +409,7 @@ select:focus-visible {
 .vn-stage {
   position: relative;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   width: 100%;
   height: 100dvh;
   overflow: hidden;
@@ -639,6 +639,10 @@ select:focus-visible {
   position: relative;
   z-index: 2;
   grid-row: 1;
+  grid-column: 1;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
   align-self: end;
   display: flex;
   align-items: flex-end;
@@ -698,12 +702,16 @@ select:focus-visible {
    Central Dramatic Choice Overlay
    ========================================================================== */
 .vn-choices-overlay {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: 1 / 1;
+  min-height: 0;
   z-index: 4;
-  display: grid;
-  place-items: center;
-  padding: 20px 20px clamp(175px, 25dvh, 230px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 20px 36px;
   background: radial-gradient(ellipse at center, rgba(7, 15, 28, 0.76) 0%, rgba(5, 11, 22, 0.54) 100%);
   backdrop-filter: blur(4px);
   animation: fade-in 0.2s ease both;
@@ -711,6 +719,8 @@ select:focus-visible {
 
 .vn-choices-container {
   width: min(760px, 100%);
+  flex-shrink: 0;
+  margin-block: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -798,6 +808,7 @@ select:focus-visible {
   position: relative;
   z-index: 5;
   grid-row: 2;
+  grid-column: 1;
   width: min(1120px, calc(100% - 36px));
   min-height: clamp(165px, 22dvh, 215px);
   margin: 0 auto clamp(14px, 2.5dvh, 28px);
@@ -826,11 +837,19 @@ select:focus-visible {
   cursor: default;
 }
 
+/* Name and controls wrap together instead of overlapping on narrow screens. */
+.vn-textbox__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: -44px 0 14px;
+}
+
 /* Floating Nameplate on Top-Left Border */
 .vn-textbox__nameplate {
-  position: absolute;
-  top: -19px;
-  left: clamp(20px, 2.6vw, 32px);
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -879,10 +898,10 @@ select:focus-visible {
 
 /* Integrated Quick Menu on Top-Right Border */
 .vn-quickmenu {
-  position: absolute;
-  top: -16px;
-  right: clamp(16px, 2.4vw, 28px);
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
+  margin-left: auto;
   align-items: center;
   gap: 4px;
   padding: 3px 6px;
@@ -1971,14 +1990,17 @@ select:focus-visible {
     width: calc(100% - 16px);
     min-height: 175px;
     margin-bottom: 8px;
-    padding: 26px 16px 14px;
+    padding: 12px 16px 14px;
+    max-height: 60dvh;
+    overflow-y: auto;
+  }
+  .vn-textbox__toolbar {
+    margin-top: 0;
   }
   .vn-textbox__nameplate {
-    left: 12px;
     padding: 3px 12px;
   }
   .vn-quickmenu {
-    right: 10px;
     gap: 2px;
     padding: 2px 4px;
   }
@@ -2016,8 +2038,16 @@ select:focus-visible {
     height: clamp(165px, 36dvh, 230px);
   }
   .vn-textbox {
-    min-height: 145px;
-    padding-top: 22px;
+    min-height: 0;
+    max-height: 55dvh;
+    overflow-y: auto;
+    padding-top: 12px;
     padding-bottom: 12px;
+  }
+  .vn-textbox__toolbar {
+    margin-top: 0;
+  }
+  .vn-choices-overlay {
+    padding: 12px 20px;
   }
 }

@@ -55,7 +55,7 @@ ys, xs = np.where(fb_patch[:, :, 3] > 0)
 fb_crop = fb_patch[ys.min():ys.max()+1, xs.min():xs.max()+1]
 fb_canvas = np.zeros((fb_crop.shape[0] + 8, fb_crop.shape[1] + 8, 4), dtype=np.uint8)
 fb_canvas[4:4+fb_crop.shape[0], 4:4+fb_crop.shape[1]] = fb_crop
-Image.fromarray(fb_canvas, 'RGBA').save(os.path.join(out_dir, '00_corpo_inteiro.png'), compress_level=9)
+Image.fromarray(fb_canvas, 'RGBA').save(out_dir / '00_corpo_inteiro.png', compress_level=9)
 print('Saved 00_corpo_inteiro.png:', fb_canvas.shape[1], 'x', fb_canvas.shape[0])
 
 # 2. 12 Expressões (Canvas padronizado: 240 x 310, alinhado na base e centralizado pelos ombros)
@@ -87,6 +87,6 @@ for r_idx, (ry0, ry_bot) in enumerate(rows_y):
         copy_w = min(pw - x_src0, STD_W - x_dst0)
         canvas[y_offset:STD_H, x_dst0:x_dst0+copy_w] = patch[:, x_src0:x_src0+copy_w]
 
-        out_path = os.path.join(out_dir, f'{name}.png')
+        out_path = out_dir / f'{name}.png'
         Image.fromarray(canvas, 'RGBA').save(out_path, compress_level=9)
         print(f'Saved {name}.png: {STD_W}x{STD_H} (x_offset={x_offset}, y_offset={y_offset})')

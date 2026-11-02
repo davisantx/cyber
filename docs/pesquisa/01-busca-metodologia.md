@@ -2,6 +2,6 @@
 
 Projeto Social - Projeto Bytes
 
-- [Documento de especificação](./Projeto_Cyber_PSOC_ADS.pdf)
-- [Planejamento](./planejamento.md)
-- [Doc inicial](./docs/psoc-docs.md)
+- [Documento acadêmico oficial](../../README.md)
+- [Propostas de enredo](../planejamento/propostas-enredo.md)
+- [Estudo inicial de viabilidade](../planejamento/psoc-docs.md)

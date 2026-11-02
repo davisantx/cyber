@@ -236,6 +236,7 @@ export function isValidProgress(value) {
   const chapter = getChapter(value.chapterId);
   if (!chapter || value.schemaVersion !== PROGRESS_SCHEMA_VERSION || value.contentRevision !== chapter.revision) return false;
   if (!STORY_PHASES.includes(value.phase)) return false;
+  if (typeof value.sceneId !== 'string' || !Object.hasOwn(chapter.scenes, value.sceneId)) return false;
   const scene = chapter.scenes[value.sceneId];
   if (!scene || !Number.isInteger(value.entryIndex) || value.entryIndex < 0 || value.entryIndex >= scene.entries.length) return false;
   if (!Number.isFinite(value.updatedAt) || value.updatedAt <= 0) return false;
@@ -244,11 +245,37 @@ export function isValidProgress(value) {
     if (typeof value.variables[key] !== typeof initial) return false;
   }
   if (value.phase === 'story' && !matchesCondition(scene.entries[value.entryIndex].when, value.variables)) return false;
-  if (!Array.isArray(value.choices)) return false;
-  return value.choices.every((choice) => (
-    choice && typeof choice === 'object' &&
+  if (!Array.isArray(value.choices) || value.choices.length > 400) return false;
+  if (!value.choices.every((choice) => (
+    choice && typeof choice === 'object' && !Array.isArray(choice) &&
     typeof choice.sceneId === 'string' &&
-    Number.isInteger(choice.entryIndex) &&
+    Number.isInteger(choice.entryIndex) && choice.entryIndex >= 0 &&
     typeof choice.optionId === 'string'
-  ));
+  ))) return false;
+
+  // Replay decisions to reject impossible positions, forged variables and stale
+  // choice references. awaitingNext also supports the former chapter placeholder.
+  const targetPhase = value.phase === 'awaitingNext' ? 'interlude' : value.phase;
+  let cursor = createInitialProgress(value.chapterId);
+  let choiceIndex = 0;
+  for (let steps = 0; steps < 400; steps += 1) {
+    if (cursor.sceneId === value.sceneId && cursor.entryIndex === value.entryIndex && cursor.phase === targetPhase) {
+      return choiceIndex === value.choices.length &&
+        Object.keys(value.variables).length === Object.keys(cursor.variables).length &&
+        Object.entries(cursor.variables).every(([key, expected]) => value.variables[key] === expected);
+    }
+    const entry = getCurrentEntry(cursor);
+    if (!entry) return false;
+    if (entry.type === 'choice') {
+      const recorded = value.choices[choiceIndex];
+      if (!recorded || recorded.sceneId !== cursor.sceneId || recorded.entryIndex !== cursor.entryIndex) return false;
+      const next = choose(cursor, recorded.optionId);
+      if (next === cursor) return false;
+      cursor = next;
+      choiceIndex += 1;
+    } else {
+      cursor = advance(cursor);
+    }
+  }
+  return false;
 }

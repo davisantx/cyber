@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { matchesCondition } from '../engine.js';
 
 const LETTER_DELAY = { lenta: 42, normal: 24, rapida: 11, instantanea: 0 };
@@ -24,6 +24,7 @@ const EXPRESSION_SR_LABELS = {
 };
 
 export default function DialoguePanel({
+  ref,
   entry,
   protagonistName,
   variables,
@@ -77,10 +78,12 @@ export default function DialoguePanel({
   const isTyping = !isChoice && visible < fullText.length;
 
   const handleAdvance = useCallback(() => {
-    if (isChoice) return;
+    if (isChoice || hasModal) return;
     if (visible < fullText.length) setVisible(fullText.length);
     else onAdvance();
-  }, [fullText.length, isChoice, onAdvance, visible]);
+  }, [fullText.length, hasModal, isChoice, onAdvance, visible]);
+
+  useImperativeHandle(ref, () => ({ advance: handleAdvance }), [handleAdvance]);
 
   // Auto-advance timer when autoPlay is enabled and line finished typing
   useEffect(() => {
@@ -95,7 +98,7 @@ export default function DialoguePanel({
   // Keyboard navigation for dialogue and choices
   useEffect(() => {
     const onKey = (event) => {
-      if (hasModal || document.querySelector('[role="dialog"]')) return;
+      if (event.defaultPrevented || hasModal || document.querySelector('[role="dialog"]')) return;
       if (event.target instanceof Element && event.target.closest('input, select, textarea')) return;
 
       if (isChoice) {
@@ -187,70 +190,72 @@ export default function DialoguePanel({
         onClick={!isChoice ? handleAdvance : undefined}
         aria-label={isChoice ? 'Pergunta da decisão narrativa' : 'Caixa de diálogo'}
       >
-        {speakerName && (
-          <div className={`vn-textbox__nameplate vn-textbox__nameplate--${mode}`}>
-            {mode === 'thought' && (
-              <span className="vn-textbox__nameplate-icon" aria-hidden="true">
-                💭
-              </span>
-            )}
-            {isChoice && (
-              <span className="vn-textbox__nameplate-tag">DECISÃO ·</span>
-            )}
-            <span className="vn-textbox__nameplate-name">{speakerName}</span>
-            {mode === 'thought' && (
-              <span className="vn-textbox__nameplate-sub">pensamento</span>
-            )}
-          </div>
-        )}
+        <div className="vn-textbox__toolbar">
+          {speakerName && (
+            <div className={`vn-textbox__nameplate vn-textbox__nameplate--${mode}`}>
+              {mode === 'thought' && (
+                <span className="vn-textbox__nameplate-icon" aria-hidden="true">
+                  💭
+                </span>
+              )}
+              {isChoice && (
+                <span className="vn-textbox__nameplate-tag">DECISÃO ·</span>
+              )}
+              <span className="vn-textbox__nameplate-name">{speakerName}</span>
+              {mode === 'thought' && (
+                <span className="vn-textbox__nameplate-sub">pensamento</span>
+              )}
+            </div>
+          )}
 
-        <nav
-          className="vn-quickmenu"
-          aria-label="Controles rápidos da partida"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="vn-quickmenu__btn"
-            onClick={onOpenHistory}
-            title="Histórico de falas (Tecla H)"
+          <nav
+            className="vn-quickmenu"
+            aria-label="Controles rápidos da partida"
+            onClick={(event) => event.stopPropagation()}
           >
-            Histórico
-          </button>
-          <button
-            type="button"
-            className={'vn-quickmenu__btn' + (autoPlay ? ' vn-quickmenu__btn--active' : '')}
-            onClick={onToggleAuto}
-            aria-pressed={autoPlay}
-            title="Avanço automático (Tecla A)"
-          >
-            Auto
-          </button>
-          <button
-            type="button"
-            className="vn-quickmenu__btn"
-            onClick={onOpenChapters}
-            title="Selecionar capítulo"
-          >
-            Capítulos
-          </button>
-          <button
-            type="button"
-            className="vn-quickmenu__btn"
-            onClick={onOpenSettings}
-            title="Configurações de leitura e tela"
-          >
-            Opções
-          </button>
-          <button
-            type="button"
-            className="vn-quickmenu__btn"
-            onClick={onBack}
-            title="Voltar ao menu principal (Esc)"
-          >
-            Menu
-          </button>
-        </nav>
+            <button
+              type="button"
+              className="vn-quickmenu__btn"
+              onClick={onOpenHistory}
+              title="Histórico de falas (Tecla H)"
+            >
+              Histórico
+            </button>
+            <button
+              type="button"
+              className={'vn-quickmenu__btn' + (autoPlay ? ' vn-quickmenu__btn--active' : '')}
+              onClick={onToggleAuto}
+              aria-pressed={autoPlay}
+              title="Avanço automático (Tecla A)"
+            >
+              Auto
+            </button>
+            <button
+              type="button"
+              className="vn-quickmenu__btn"
+              onClick={onOpenChapters}
+              title="Selecionar capítulo"
+            >
+              Capítulos
+            </button>
+            <button
+              type="button"
+              className="vn-quickmenu__btn"
+              onClick={onOpenSettings}
+              title="Configurações de leitura e tela"
+            >
+              Opções
+            </button>
+            <button
+              type="button"
+              className="vn-quickmenu__btn"
+              onClick={onBack}
+              title="Voltar ao menu principal (Esc)"
+            >
+              Menu
+            </button>
+          </nav>
+        </div>
 
         <div className="vn-textbox__body">
           {isChoice ? (

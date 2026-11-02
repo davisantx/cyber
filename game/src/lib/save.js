@@ -6,9 +6,10 @@ export const BACKUP_SAVE_KEY = 'cyber:save:incompatible-backup';
 
 export const isValidSave = isValidProgress;
 
-export function readSaveStatus(storage = globalThis.localStorage) {
+export function readSaveStatus(storage) {
   try {
-    const raw = storage?.getItem(SAVE_KEY);
+    if (storage === undefined) storage = globalThis.localStorage;
+    const raw = storage.getItem(SAVE_KEY);
     if (raw !== null && raw !== undefined) {
       let value;
       try {
@@ -28,21 +29,30 @@ export function readSaveStatus(storage = globalThis.localStorage) {
   }
 }
 
-export function readSave(storage = globalThis.localStorage) {
+export function readSave(storage) {
   return readSaveStatus(storage).save;
 }
 
-export function writeSave(progress, storage = globalThis.localStorage) {
+export function writeSave(progress, storage) {
   if (!isValidSave(progress)) return false;
   try {
+    if (storage === undefined) storage = globalThis.localStorage;
     const previous = storage.getItem(SAVE_KEY);
     if (previous) {
       let previousValid = false;
       try { previousValid = isValidSave(JSON.parse(previous)); } catch { /* Keep unreadable data as a backup. */ }
       if (!previousValid) {
-        const backup = storage.getItem(BACKUP_SAVE_KEY);
-        if (backup && backup !== previous) return false;
-        if (!backup) storage.setItem(BACKUP_SAVE_KEY, previous);
+        // Preserve earlier backups, including the original single-backup format.
+        let key = BACKUP_SAVE_KEY;
+        for (let slot = 2; ; slot += 1) {
+          const backup = storage.getItem(key);
+          if (backup === previous) break;
+          if (backup === null) {
+            storage.setItem(key, previous);
+            break;
+          }
+          key = `${BACKUP_SAVE_KEY}:${slot}`;
+        }
       }
     }
     storage.setItem(SAVE_KEY, JSON.stringify(progress));

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   advance,
   choose,
@@ -101,6 +101,8 @@ export default function StoryScreen({
 }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
+  const dialogueRef = useRef(null);
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
 
   const chapter = progress && getChapter(progress.chapterId);
   const scene = progress && getCurrentScene(progress);
@@ -132,7 +134,7 @@ export default function StoryScreen({
 
   useEffect(() => {
     const onKey = (event) => {
-      if (anyModalOpen || document.querySelector('[role="dialog"]')) return;
+      if (event.defaultPrevented || anyModalOpen || document.querySelector('[role="dialog"]')) return;
       if (event.target instanceof Element && event.target.closest('input, select, textarea')) return;
 
       if (event.key === 'Escape') {
@@ -140,6 +142,7 @@ export default function StoryScreen({
         onBack();
         return;
       }
+      if (progress?.phase !== 'story') return;
       if (event.key === 'h' || event.key === 'H' || event.key === 'l' || event.key === 'L') {
         event.preventDefault();
         setHistoryOpen(true);
@@ -152,7 +155,7 @@ export default function StoryScreen({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [anyModalOpen, onBack]);
+  }, [anyModalOpen, onBack, progress?.phase]);
 
   const handleAdvance = useCallback(() => onProgress(advance(progress)), [onProgress, progress]);
   const handleChoose = useCallback((optionId) => onProgress(choose(progress, optionId)), [onProgress, progress]);
@@ -170,6 +173,7 @@ export default function StoryScreen({
         progress={progress}
         scene={scene}
         reducedMotion={reducedMotion}
+        paused={anyModalOpen}
         onProgress={onProgress}
         onOpenChapters={onOpenChapters}
       />
@@ -196,133 +200,139 @@ export default function StoryScreen({
   const hasTwoCharacters = Boolean(stageCharacters.left && stageCharacters.right);
 
   return (
-    <main
-      className={
-        'vn-stage story-stage story-stage--' +
-        scene.background +
-        (isDigitalScene ? ' vn-stage--digital' : '')
-      }
-      style={
-        background
-          ? {
-              backgroundImage: `url("${import.meta.env.BASE_URL + background}")`,
-              backgroundPosition: 'center',
-              backgroundSize: 'cover',
-            }
-          : undefined
-      }
-      onWheel={(event) => {
-        if (!anyModalOpen && event.deltaY < -35) {
-          setHistoryOpen(true);
-        }
-      }}
-    >
-      {/* Camada clicável do palco para avançar falas */}
-      <div
-        className="vn-stage__backdrop"
-        onClick={!isChoice ? handleAdvance : undefined}
-        aria-hidden="true"
-      />
-
-      {/* Badge diegético discreto de Capítulo, Ato e Local */}
-      <div className="vn-location-badge" key={`${progress.chapterId}:${scene.act}:${scene.setting}`}>
-        <span className="vn-location-badge__act">
-          CAP. {chapter.number} · {scene.act}
-        </span>
-        <span className="vn-location-badge__place">{scene.setting}</span>
-      </div>
-
-      {/* Cartela cinematográfica temporária na abertura/mudança de ato */}
-      {!reducedMotion && (
-        <div className="vn-act-card" key={`${progress.chapterId}:${scene.act}`} aria-hidden="true">
-          <span className="vn-act-card__chapter">
-            CAPÍTULO {chapter.number} · {chapter.title.toUpperCase()}
-          </span>
-          <strong className="vn-act-card__act">{scene.act}</strong>
-          <span className="vn-act-card__setting">{scene.setting}</span>
-        </div>
-      )}
-
-      {/* Cartão diegético de tela/notificação nas cenas digitais */}
-      {digitalCard && !isChoice && (
-        <aside
-          className={`vn-digital-card vn-digital-card--${digitalCard.tone}`}
-          aria-label="Conteúdo exibido na tela do celular"
-        >
-          <div className="vn-digital-card__header">
-            <span className="vn-digital-card__dot" aria-hidden="true" />
-            <span className="vn-digital-card__source">{digitalCard.source}</span>
-          </div>
-          <p className="vn-digital-card__headline">{digitalCard.headline}</p>
-          <p className="vn-digital-card__detail">{digitalCard.detail}</p>
-        </aside>
-      )}
-
-      {saveWarning && (
-        <p className="story-save-warning" role="alert">
-          {saveWarning}
-        </p>
-      )}
-
-      {/* Camada de Personagens ancorada diretamente no topo da caixa de diálogo */}
-      <div
+    <>
+      <main
+        inert={historyOpen}
+        aria-hidden={historyOpen || undefined}
         className={
-          'vn-stage__characters' + (hasTwoCharacters ? ' vn-stage__characters--duo' : ' vn-stage__characters--solo')
+          'vn-stage story-stage story-stage--' +
+          scene.background +
+          (isDigitalScene ? ' vn-stage--digital' : '')
         }
-        aria-hidden="true"
+        style={
+          background
+            ? {
+                backgroundImage: `url("${import.meta.env.BASE_URL + background}")`,
+                backgroundPosition: 'center',
+                backgroundSize: 'cover',
+              }
+            : undefined
+        }
+        onWheel={(event) => {
+          const scrollingText = event.target instanceof Element && event.target.closest('.vn-textbox');
+          if (!anyModalOpen && !isChoice && !scrollingText && event.deltaY < -35) {
+            setHistoryOpen(true);
+          }
+        }}
       >
-        {stageCharacters.left && (
-          <div
-            className={
-              'vn-character-slot vn-character-slot--left' +
-              (stageCharacters.left.active ? ' vn-character-slot--active' : ' vn-character-slot--listening')
-            }
-          >
-            <img
-              className="vn-character vn-character--protagonist"
-              src={import.meta.env.BASE_URL + stageCharacters.left.src}
-              alt=""
-            />
+        {/* Camada clicável do palco para avançar falas */}
+        <div
+          className="vn-stage__backdrop"
+          onClick={!isChoice && !anyModalOpen ? () => dialogueRef.current?.advance() : undefined}
+          aria-hidden="true"
+        />
+
+        {/* Badge diegético discreto de Capítulo, Ato e Local */}
+        <div className="vn-location-badge" key={`${progress.chapterId}:${scene.act}:${scene.setting}`}>
+          <span className="vn-location-badge__act">
+            CAP. {chapter.number} · {scene.act}
+          </span>
+          <span className="vn-location-badge__place">{scene.setting}</span>
+        </div>
+
+        {/* Cartela cinematográfica temporária na abertura/mudança de ato */}
+        {!reducedMotion && !isChoice && (
+          <div className="vn-act-card" key={`${progress.chapterId}:${scene.act}`} aria-hidden="true">
+            <span className="vn-act-card__chapter">
+              CAPÍTULO {chapter.number} · {chapter.title.toUpperCase()}
+            </span>
+            <strong className="vn-act-card__act">{scene.act}</strong>
+            <span className="vn-act-card__setting">{scene.setting}</span>
           </div>
         )}
 
-        {stageCharacters.right && (
-          <div
-            className={
-              'vn-character-slot vn-character-slot--right' +
-              (stageCharacters.right.active ? ' vn-character-slot--active' : ' vn-character-slot--listening')
-            }
+        {/* Cartão diegético de tela/notificação nas cenas digitais */}
+        {digitalCard && !isChoice && (
+          <aside
+            className={`vn-digital-card vn-digital-card--${digitalCard.tone}`}
+            aria-label="Conteúdo exibido na tela do celular"
           >
-            <img
-              className="vn-character vn-character--supporting"
-              src={import.meta.env.BASE_URL + stageCharacters.right.src}
-              alt=""
-            />
-          </div>
+            <div className="vn-digital-card__header">
+              <span className="vn-digital-card__dot" aria-hidden="true" />
+              <span className="vn-digital-card__source">{digitalCard.source}</span>
+            </div>
+            <p className="vn-digital-card__headline">{digitalCard.headline}</p>
+            <p className="vn-digital-card__detail">{digitalCard.detail}</p>
+          </aside>
         )}
-      </div>
 
-      <DialoguePanel
-        key={`${progress.chapterId}:${progress.sceneId}:${progress.entryIndex}`}
-        entry={entry}
-        protagonistName={chapter.protagonist.name}
-        variables={progress.variables}
-        textSpeed={preferences.textSpeed}
-        reducedMotion={reducedMotion}
-        autoPlay={autoPlay}
-        hasModal={anyModalOpen}
-        onAdvance={handleAdvance}
-        onChoose={handleChoose}
-        onOpenHistory={() => setHistoryOpen(true)}
-        onToggleAuto={() => setAutoPlay((prev) => !prev)}
-        onOpenChapters={onOpenChapters}
-        onOpenSettings={onOpenSettings}
-        onBack={onBack}
-      />
+        {saveWarning && (
+          <p className="story-save-warning" role="alert">
+            {saveWarning}
+          </p>
+        )}
 
+        {/* Camada de Personagens ancorada diretamente no topo da caixa de diálogo */}
+        <div
+          className={
+            'vn-stage__characters' + (hasTwoCharacters ? ' vn-stage__characters--duo' : ' vn-stage__characters--solo')
+          }
+          aria-hidden="true"
+        >
+          {stageCharacters.left && (
+            <div
+              className={
+                'vn-character-slot vn-character-slot--left' +
+                (stageCharacters.left.active ? ' vn-character-slot--active' : ' vn-character-slot--listening')
+              }
+            >
+              <img
+                className="vn-character vn-character--protagonist"
+                src={import.meta.env.BASE_URL + stageCharacters.left.src}
+                alt=""
+              />
+            </div>
+          )}
+
+          {stageCharacters.right && (
+            <div
+              className={
+                'vn-character-slot vn-character-slot--right' +
+                (stageCharacters.right.active ? ' vn-character-slot--active' : ' vn-character-slot--listening')
+              }
+            >
+              <img
+                className="vn-character vn-character--supporting"
+                src={import.meta.env.BASE_URL + stageCharacters.right.src}
+                alt=""
+              />
+            </div>
+          )}
+        </div>
+
+        <DialoguePanel
+          ref={dialogueRef}
+          key={`${progress.chapterId}:${progress.sceneId}:${progress.entryIndex}`}
+          entry={entry}
+          protagonistName={chapter.protagonist.name}
+          variables={progress.variables}
+          textSpeed={preferences.textSpeed}
+          reducedMotion={reducedMotion}
+          autoPlay={autoPlay}
+          hasModal={anyModalOpen}
+          onAdvance={handleAdvance}
+          onChoose={handleChoose}
+          onOpenHistory={() => setHistoryOpen(true)}
+          onToggleAuto={() => setAutoPlay((prev) => !prev)}
+          onOpenChapters={onOpenChapters}
+          onOpenSettings={onOpenSettings}
+          onBack={onBack}
+        />
+
+      </main>
       {historyOpen && (
-        <HistoryModal progress={progress} onClose={() => setHistoryOpen(false)} />
+        <HistoryModal progress={progress} onClose={closeHistory} />
       )}
-    </main>
+    </>
   );
 }

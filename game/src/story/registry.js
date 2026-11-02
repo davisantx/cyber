@@ -9,15 +9,11 @@ export const CHAPTER_LIST = Object.freeze([
   chapter03,
 ]);
 
-export const CHAPTERS = Object.freeze({
-  [chapter01.id]: chapter01,
-  [chapter02.id]: chapter02,
-  [chapter03.id]: chapter03,
-});
+export const CHAPTERS = Object.freeze(Object.fromEntries(CHAPTER_LIST.map(chapter => [chapter.id, chapter])));
 
 export const FIRST_CHAPTER_ID = chapter01.id;
 
 export function getChapter(chapterId) {
-  return CHAPTERS[chapterId] ?? null;
+  return typeof chapterId === 'string' && Object.hasOwn(CHAPTERS, chapterId) ? CHAPTERS[chapterId] : null;
 }
 

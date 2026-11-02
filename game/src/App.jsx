@@ -37,7 +37,7 @@ export default function App() {
   useEffect(() => () => clearTimeout(transitionTimer.current), []);
   useEffect(() => {
     const refresh = (event) => {
-      if (!event || event.key === SAVE_KEY || event.key === LEGACY_SAVE_KEY) {
+      if (event.type === 'focus' || event.key === null || event.key === SAVE_KEY || event.key === LEGACY_SAVE_KEY) {
         setSaveStatus(readSaveStatus());
       }
     };

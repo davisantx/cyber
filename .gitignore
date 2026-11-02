@@ -3,6 +3,8 @@ game/node_modules/
 game/dist/
 game/.build-check/
 game/.edge-profile/
+game/test-results/
+game/playwright-report/
 
 # Local configuration and caches
 *.local

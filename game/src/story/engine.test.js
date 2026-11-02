@@ -291,6 +291,26 @@ test('invalid destinations and stale content revisions cannot be resumed', () =>
   assert.equal(isValidProgress({ ...progress, variables: {} }), false);
 });
 
+test('save validation rejects impossible choices, positions, variables and phases', () => {
+  const initial = createInitialProgress();
+  assert.equal(isValidProgress({ ...initial, chapterId: 'toString' }), false);
+  assert.equal(isValidProgress({ ...initial, sceneId: '__proto__' }), false);
+  assert.equal(isValidProgress({ ...initial, phase: 'interlude' }), false);
+  assert.equal(isValidProgress({ ...initial, phase: 'awaitingNext' }), false);
+  assert.equal(isValidProgress({ ...initial, variables: { ...initial.variables, rested: true } }), false);
+  assert.equal(isValidProgress({ ...initial, sceneId: 'fim_tranquilo' }), false);
+  assert.equal(isValidProgress({ ...initial, choices: [{ sceneId: 'missing', entryIndex: -1, optionId: 'missing' }] }), false);
+
+  const ending = play('portal', 'cartao', 'orientar', 'dormir');
+  for (const patch of [{ sceneId: 'missing' }, { entryIndex: 0 }, { optionId: 'missing' }]) {
+    const choices = ending.choices.map((choice, index) => index === 0 ? { ...choice, ...patch } : choice);
+    assert.equal(isValidProgress({ ...ending, choices }), false);
+  }
+  assert.equal(isValidProgress({ ...ending, choices: ending.choices.slice(1) }), false);
+  assert.equal(isValidProgress({ ...ending, choices: [...ending.choices].reverse() }), false);
+  assert.equal(isValidProgress(JSON.parse(JSON.stringify(ending))), true);
+});
+
 test('all chapters in CHAPTER_LIST can be started directly', () => {
   assert.equal(CHAPTER_LIST.length, 3);
   for (const chapter of CHAPTER_LIST) {
