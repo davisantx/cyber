@@ -101,6 +101,7 @@ export default function StoryScreen({
 }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
+  const [bestChoiceNotice, setBestChoiceNotice] = useState(null);
   const dialogueRef = useRef(null);
   const closeHistory = useCallback(() => setHistoryOpen(false), []);
 
@@ -158,7 +159,28 @@ export default function StoryScreen({
   }, [anyModalOpen, onBack, progress?.phase]);
 
   const handleAdvance = useCallback(() => onProgress(advance(progress)), [onProgress, progress]);
-  const handleChoose = useCallback((optionId) => onProgress(choose(progress, optionId)), [onProgress, progress]);
+  const handleChoose = useCallback(
+    (optionId) => {
+      const currentEntry = getCurrentEntry(progress);
+      const chosenOption =
+        currentEntry?.type === 'choice'
+          ? currentEntry.options.find((opt) => opt.id === optionId)
+          : null;
+      const nextProgress = choose(progress, optionId);
+      if (chosenOption && nextProgress !== progress) {
+        setBestChoiceNotice({
+          chapterId: nextProgress.chapterId,
+          sceneId: nextProgress.sceneId,
+          optionId,
+          isBest: Boolean(chosenOption.best),
+        });
+      } else {
+        setBestChoiceNotice(null);
+      }
+      onProgress(nextProgress);
+    },
+    [onProgress, progress]
+  );
 
   const stageCharacters = useMemo(
     () => getStageCharacters(chapter, scene, progress),
@@ -198,6 +220,12 @@ export default function StoryScreen({
   const isDigitalScene = scene.background.startsWith('digital');
   const digitalCard = isDigitalScene ? DIGITAL_HIGHLIGHTS[progress.sceneId] : null;
   const hasTwoCharacters = Boolean(stageCharacters.left && stageCharacters.right);
+  const showBestFeedback = Boolean(
+    bestChoiceNotice &&
+      !isChoice &&
+      bestChoiceNotice.chapterId === progress.chapterId &&
+      bestChoiceNotice.sceneId === progress.sceneId
+  );
 
   return (
     <>
@@ -240,8 +268,37 @@ export default function StoryScreen({
           <span className="vn-location-badge__place">{scene.setting}</span>
         </div>
 
+        {/* Feedback visual da escolha selecionada */}
+        {showBestFeedback && (
+          <div
+            className={
+              'vn-choice-feedback ' +
+              (bestChoiceNotice.isBest
+                ? 'vn-choice-feedback--best'
+                : 'vn-choice-feedback--inadequate')
+            }
+            key={`${bestChoiceNotice.chapterId}:${bestChoiceNotice.sceneId}:${bestChoiceNotice.optionId}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span className="vn-choice-feedback__icon" aria-hidden="true">
+              {bestChoiceNotice.isBest ? '✓' : '✕'}
+            </span>
+            <div className="vn-choice-feedback__content">
+              <strong className="vn-choice-feedback__title">
+                {bestChoiceNotice.isBest ? 'Opção mais adequada' : 'Opção não adequada'}
+              </strong>
+              <span className="vn-choice-feedback__subtitle">
+                {bestChoiceNotice.isBest
+                  ? 'Conduta recomendada de cidadania digital'
+                  : 'Atenção aos sinais de risco desta escolha'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Cartela cinematográfica temporária na abertura/mudança de ato */}
-        {!reducedMotion && !isChoice && (
+        {!reducedMotion && !isChoice && !showBestFeedback && (
           <div className="vn-act-card" key={`${progress.chapterId}:${scene.act}`} aria-hidden="true">
             <span className="vn-act-card__chapter">
               CAPÍTULO {chapter.number} · {chapter.title.toUpperCase()}

@@ -156,6 +156,7 @@ export function buildDialogueHistory(progress) {
         speaker: chapter.protagonist.name,
         prompt: entry.prompt,
         chosenLabel: chosenOption?.label ?? recorded.optionId,
+        isBest: Boolean(chosenOption?.best),
         isCurrent: false,
       });
       cursor = choose(cursor, recorded.optionId);

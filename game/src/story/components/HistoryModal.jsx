@@ -51,11 +51,30 @@ export default function HistoryModal({ progress, onClose }) {
               )}
 
               {item.type === 'choice' ? (
-                <article className="history-entry history-entry--choice">
-                  <span className="history-entry__badge">DECISÃO TOMADA</span>
+                <article
+                  className={
+                    'history-entry history-entry--choice' +
+                    (item.isBest
+                      ? ' history-entry--choice-best'
+                      : ' history-entry--choice-inadequate')
+                  }
+                >
+                  <div className="history-entry__choice-header">
+                    <span className="history-entry__badge">DECISÃO TOMADA</span>
+                    <span
+                      className={
+                        'history-entry__best-badge ' +
+                        (item.isBest
+                          ? 'history-entry__best-badge--best'
+                          : 'history-entry__best-badge--inadequate')
+                      }
+                    >
+                      {item.isBest ? '✓ OPÇÃO MAIS ADEQUADA' : '✕ OPÇÃO NÃO ADEQUADA'}
+                    </span>
+                  </div>
                   <p className="history-entry__prompt">{item.prompt}</p>
                   <p className="history-entry__chosen">
-                    <span aria-hidden="true">◆</span> {item.chosenLabel}
+                    <span aria-hidden="true">{item.isBest ? '✓' : '✕'}</span> {item.chosenLabel}
                   </p>
                 </article>
               ) : (

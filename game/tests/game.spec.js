@@ -59,10 +59,37 @@ test('clicking the scenery completes a line before advancing', async ({ page }) 
 
 test('keyboard chooses a numbered alternative', async ({ page }) => {
   const progress = reach('chapter-03', p => p.sceneId === 'pedido_acesso' && getCurrentEntry(p)?.type === 'choice');
-  await openSaved(page, progress);
-  await expect(page.locator('.vn-choice-btn')).toHaveCount(3);
-  await page.keyboard.press('3');
+  await openSaved(page, progress, { reducedMotion: false });
+  const choices = page.locator('.vn-choice-btn');
+  await expect(choices).toHaveCount(3);
+  const negarKey = await page.locator('.vn-choice-btn[data-option-id="negar"] .vn-choice-btn__key').innerText();
+  await page.keyboard.press(negarKey.trim());
+  await expect(page.locator('.vn-choice-btn[data-option-id="fechar"]')).toHaveClass(/vn-choice-btn--best-selected/);
+  await expect(page.locator('.vn-choice-btn[data-option-id="entrar"]')).toHaveClass(/vn-choice-btn--inadequate/);
+  await expect(page.locator('.vn-choice-btn[data-option-id="negar"]')).toHaveClass(/vn-choice-btn--inadequate-selected/);
+  await expect(page.locator('.vn-choice-btn__feedback--best')).toHaveCount(1);
+  await expect(page.locator('.vn-choice-btn__feedback--inadequate')).toHaveCount(2);
+  expect((await readProgress(page)).sceneId).toBe('pedido_acesso');
+  await page.keyboard.press('ArrowRight');
   await expect.poll(async () => (await readProgress(page)).sceneId).toBe('permissoes_negadas');
+  await expect(page.locator('.vn-choice-feedback--inadequate')).toBeVisible();
+});
+
+test('selecting the most appropriate option shows visual feedback on the button and stage', async ({ page }) => {
+  const progress = reach('chapter-03', p => p.sceneId === 'pedido_acesso' && getCurrentEntry(p)?.type === 'choice');
+  await openSaved(page, progress, { reducedMotion: false });
+  const bestBtn = page.locator('.vn-choice-btn[data-option-id="fechar"]');
+  await bestBtn.click();
+  await expect(bestBtn).toHaveClass(/vn-choice-btn--best-selected/);
+  await expect(page.locator('.vn-choice-btn__feedback--best')).toContainText('Mais adequada');
+  // Clicking again does not bypass the mandatory pause
+  await bestBtn.click();
+  expect((await readProgress(page)).sceneId).toBe('pedido_acesso');
+  // Pressing Enter bypasses the mandatory pause immediately
+  await page.keyboard.press('Enter');
+  await expect.poll(async () => (await readProgress(page)).sceneId).toBe('pagina_fechada');
+  await expect(page.locator('.vn-choice-feedback--best')).toBeVisible();
+  await expect(page.locator('.vn-choice-feedback__title')).toContainText('Opção mais adequada');
 });
 
 test('chapter selection pauses the interlude and resumes after closing', async ({ page }) => {
@@ -152,7 +179,8 @@ for (const [width, height] of [[320, 568], [390, 844], [640, 360], [844, 390], [
         return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
       });
       expect(overlaps).toBe(false);
-      await choices.nth(2).click();
+      await page.locator('.vn-choice-btn[data-option-id="negar"]').click();
+      await page.keyboard.press('Enter');
       await expect.poll(async () => (await readProgress(page)).sceneId).toBe('permissoes_negadas');
     });
   }

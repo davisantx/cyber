@@ -23,6 +23,15 @@ const EXPRESSION_SR_LABELS = {
   aliviado: 'aliviado',
 };
 
+function shuffleOptions(items) {
+  const list = [...items];
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
 export default function DialoguePanel({
   ref,
   entry,
@@ -44,11 +53,28 @@ export default function DialoguePanel({
   const fullText = isChoice ? entry.prompt ?? '' : entry.text ?? '';
   const instant = reducedMotion || textSpeed === 'instantanea';
   const [visible, setVisible] = useState(instant ? fullText.length : 0);
+  const [selectedOptionId, setSelectedOptionId] = useState(null);
   const choiceRefs = useRef([]);
 
   const options = useMemo(
-    () => (isChoice ? entry.options.filter((option) => matchesCondition(option.when, variables)) : []),
+    () =>
+      isChoice
+        ? shuffleOptions(entry.options.filter((option) => matchesCondition(option.when, variables)))
+        : [],
     [entry.options, isChoice, variables]
+  );
+
+  const selectedOption = useMemo(
+    () => (selectedOptionId ? options.find((opt) => opt.id === selectedOptionId) ?? null : null),
+    [options, selectedOptionId]
+  );
+
+  const handleSelectOption = useCallback(
+    (option) => {
+      if (!option || hasModal || selectedOptionId) return;
+      setSelectedOptionId(option.id);
+    },
+    [hasModal, selectedOptionId]
   );
 
   useEffect(() => {
@@ -102,11 +128,20 @@ export default function DialoguePanel({
       if (event.target instanceof Element && event.target.closest('input, select, textarea')) return;
 
       if (isChoice) {
+        if (selectedOptionId) {
+          if (event.key === 'Enter' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            onChoose(selectedOptionId);
+          } else if ([' ', '1', '2', '3', '4', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+            event.preventDefault();
+          }
+          return;
+        }
         if (['1', '2', '3', '4'].includes(event.key)) {
           const idx = Number(event.key) - 1;
           if (options[idx]) {
             event.preventDefault();
-            onChoose(options[idx].id);
+            handleSelectOption(options[idx]);
           }
           return;
         }
@@ -130,7 +165,7 @@ export default function DialoguePanel({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleAdvance, hasModal, isChoice, onChoose, options]);
+  }, [handleAdvance, handleSelectOption, hasModal, isChoice, onChoose, options, selectedOptionId]);
 
   const mode = isChoice ? 'prompt' : entry.mode ?? 'dialogue';
   const speakerName = isChoice
@@ -158,28 +193,82 @@ export default function DialoguePanel({
       {isChoice && (
         <div className="vn-choices-overlay" role="group" aria-labelledby="vn-choice-prompt">
           <div className="vn-choices-container">
-            <p className="vn-choices-header">
-              <span aria-hidden="true">◆</span> O QUE {protagonistName?.toUpperCase()} DECIDE FAZER?
+            <p
+              className={
+                'vn-choices-header' +
+                (selectedOption
+                  ? selectedOption.best
+                    ? ' vn-choices-header--best'
+                    : ' vn-choices-header--inadequate'
+                  : '')
+              }
+            >
+              <span aria-hidden="true">
+                {selectedOption ? (selectedOption.best ? '✓' : '✕') : '◆'}
+              </span>{' '}
+              {selectedOption
+                ? selectedOption.best
+                  ? 'OPÇÃO MAIS ADEQUADA SELECIONADA'
+                  : 'OPÇÃO NÃO ADEQUADA · VEJA A MAIS ADEQUADA EM VERDE'
+                : `O QUE ${protagonistName?.toUpperCase()} DECIDE FAZER?`}
             </p>
             <div className="vn-choice-list">
-              {options.map((option, index) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className="vn-choice-btn"
-                  style={{ '--choice-index': index }}
-                  ref={(el) => {
-                    choiceRefs.current[index] = el;
-                  }}
-                  onClick={() => onChoose(option.id)}
-                >
-                  <kbd className="vn-choice-btn__key" aria-hidden="true">
-                    {index + 1}
-                  </kbd>
-                  <span className="vn-choice-btn__label">{option.label}</span>
-                </button>
-              ))}
+              {options.map((option, index) => {
+                const hasSelection = Boolean(selectedOption);
+                const isSelected = selectedOptionId === option.id;
+                const isAdequate = Boolean(option.best);
+                const showGreen = hasSelection && isAdequate;
+                const showRed = hasSelection && !isAdequate;
+                const isDimmed = hasSelection && selectedOption.best && !isAdequate;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    data-option-id={option.id}
+                    className={
+                      'vn-choice-btn' +
+                      (showGreen ? ' vn-choice-btn--best-selected' : '') +
+                      (showRed ? ' vn-choice-btn--inadequate' : '') +
+                      (showRed && isSelected ? ' vn-choice-btn--inadequate-selected' : '') +
+                      (isDimmed ? ' vn-choice-btn--dimmed' : '')
+                    }
+                    style={{ '--choice-index': index }}
+                    ref={(el) => {
+                      choiceRefs.current[index] = el;
+                    }}
+                    onClick={() => handleSelectOption(option)}
+                  >
+                    <kbd className="vn-choice-btn__key" aria-hidden="true">
+                      {showGreen ? '✓' : showRed ? '✕' : index + 1}
+                    </kbd>
+                    <span className="vn-choice-btn__label">{option.label}</span>
+                    {showGreen && (
+                      <span
+                        className="vn-choice-btn__feedback vn-choice-btn__feedback--best"
+                        role="status"
+                      >
+                        Mais adequada
+                      </span>
+                    )}
+                    {showRed && (
+                      <span
+                        className="vn-choice-btn__feedback vn-choice-btn__feedback--inadequate"
+                        role={isSelected ? 'status' : undefined}
+                      >
+                        Não adequada
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            {selectedOption && (
+              <p className="vn-choices-pause-hint">
+                <span>
+                  Pressione <kbd>Enter</kbd> ou <kbd>→</kbd> para avançar
+                </span>
+              </p>
+            )}
           </div>
         </div>
       )}

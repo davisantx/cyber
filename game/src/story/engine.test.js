@@ -52,6 +52,7 @@ function play(first, second, group, last, extraPicks = {}) {
     ultima_noite: last,
     revisao_sabado: 'questao',
     entrada_escola: 'entrar',
+    prova: 'denunciar_golpe',
     ...extraPicks,
   };
   for (let turns = 0; turns < 300; turns += 1) {
@@ -72,7 +73,7 @@ test('all combinations of chapter 1 decisions reach chapter 2', () => {
           const ending = play(first, second, group, last);
           assert.equal(ending.phase, 'interlude');
           assert.ok(ending.sceneId.startsWith('fim_'));
-          assert.equal(ending.choices.length, 6);
+          assert.equal(ending.choices.length, 7);
           assert.equal(isValidProgress(ending), true);
           const next = finishInterlude(ending);
           assert.equal(next.phase, 'story');
@@ -94,6 +95,7 @@ function playChapter2(first, second, third, fourth, extraPicks = {}) {
     conversa_final: fourth,
     alcance_correcao: 'depois',
     preparo_feira: 'fontes',
+    fechamento: 'denunciar_capa',
     ...extraPicks,
   };
   for (let turns = 0; turns < 300; turns += 1) {
@@ -112,7 +114,7 @@ test('all combinations of chapter 2 decisions reach a valid ending', () => {
         for (const fourth of first === 'repassar' ? ['assumir', 'apagar'] : ['guia', 'conversa']) {
           const ending = playChapter2(first, second, third, fourth);
           assert.equal(ending.phase, 'interlude');
-          assert.equal(ending.choices.length, 6);
+          assert.equal(ending.choices.length, 7);
           assert.equal(isValidProgress(ending), true);
           const next = finishInterlude(ending);
           assert.equal(next.chapterId, 'chapter-03');
@@ -140,6 +142,7 @@ function playChapter3(first, second, third, fourth, extraPicks = {}) {
     escolha_apoio: fourth,
     sinais_site: 'permissoes',
     alcance_link: 'esperar',
+    fechamento: 'ativar_2fa',
     ...extraPicks,
   };
   for (let turns = 0; turns < 300; turns += 1) {
@@ -158,7 +161,7 @@ test('all 54 combinations of the original chapter 3 decisions reach a valid endi
         for (const fourth of second === 'entrar' ? ['proteger', 'so_apagar'] : ['ajudar', 'conversar']) {
           const ending = playChapter3(first, second, third, fourth);
           assert.equal(ending.phase, 'interlude');
-          assert.equal(ending.choices.length, 6);
+          assert.equal(ending.choices.length, 7);
           assert.equal(isValidProgress(ending), true);
           assert.equal(finishInterlude(ending).phase, 'awaitingNext');
         }
@@ -203,51 +206,59 @@ test('sharing, correcting, and resting change later events and the ending', () =
   assert.equal(tired.variables.rested, false);
 });
 
-test('new chapter 1 decisions change study and arrival at the exam', () => {
+test('new chapter 1 decisions change study, arrival at the exam, and post-exam scam response', () => {
   const practiced = play('portal', 'cartao', 'orientar', 'dormir', {
-    revisao_sabado: 'questao', entrada_escola: 'ajudar',
+    revisao_sabado: 'questao', entrada_escola: 'ajudar', prova: 'denunciar_golpe',
   });
   const distracted = play('portal', 'cartao', 'orientar', 'dormir', {
-    revisao_sabado: 'grupo', entrada_escola: 'entrar',
+    revisao_sabado: 'grupo', entrada_escola: 'entrar', prova: 'ignorar_golpe',
   });
   assert.equal(practiced.variables.practicedWeakPoint, true);
   assert.equal(practiced.variables.helpedAtGate, true);
+  assert.equal(practiced.variables.reportedScam, true);
   assert.equal(distracted.variables.followedGroup, true);
   assert.equal(distracted.variables.settledAtGate, true);
-  assert.equal(practiced.choices.length, 6);
-  assert.equal(distracted.choices.length, 6);
+  assert.equal(distracted.variables.ignoredScam, true);
+  assert.equal(practiced.choices.length, 7);
+  assert.equal(distracted.choices.length, 7);
 });
 
-test('new chapter 2 decisions carry corrections and prepare the fair', () => {
+test('new chapter 2 decisions carry corrections, counter out-of-context media, and handle clickbait engagement', () => {
   for (const [reach, key] of [['vizinha', 'reachedOtherClass'], ['professora', 'askedTeacherToShare'], ['depois', null]]) {
     for (const [prep, prepKey] of [['fontes', 'preparedSourceCard'], ['fala', 'rehearsedExplanation']]) {
-      const ending = playChapter2('abrir', 'contexto', 'explicar', 'guia', {
-        alcance_correcao: reach, preparo_feira: prep,
-      });
-      assert.equal(ending.phase, 'interlude');
-      assert.equal(ending.choices.length, 6);
-      if (key) assert.equal(ending.variables[key], true);
-      assert.equal(ending.variables[prepKey], true);
+      for (const [clickbait, cbKey] of [['denunciar_capa', 'reportedClickbait'], ['divulgar_oficial', 'sharedOfficialOnly']]) {
+        const ending = playChapter2('abrir', 'contexto', 'explicar', 'guia', {
+          alcance_correcao: reach, preparo_feira: prep, fechamento: clickbait,
+        });
+        assert.equal(ending.phase, 'interlude');
+        assert.equal(ending.choices.length, 7);
+        if (key) assert.equal(ending.variables[key], true);
+        assert.equal(ending.variables[prepKey], true);
+        assert.equal(ending.variables[cbKey], true);
+      }
     }
   }
 });
 
-test('new chapter 3 decisions reveal site clues and respond to a second copy', () => {
+test('new chapter 3 decisions reveal site clues, respond to a second copy, and counter fake support', () => {
   for (const [signal, key] of [['permissoes', 'readPermissions'], ['ajuda', 'checkedVitraHelp'], ['contador', 'followedCountdown']]) {
     for (const [reach, reachKey] of [['origem', 'tracedLink'], ['aviso', 'warnedOtherGroup'], ['esperar', null]]) {
-      const ending = playChapter3('abrir', 'fechar', 'grupo', 'ajudar', {
-        sinais_site: signal, alcance_link: reach,
-      });
-      assert.equal(ending.phase, 'interlude');
-      assert.equal(ending.choices.length, 6);
-      assert.equal(ending.variables[key], true);
-      if (reachKey) assert.equal(ending.variables[reachKey], true);
+      for (const [support, supKey] of [['ativar_2fa', 'enabledTwoFactor'], ['alertar_turma_2fa', 'warnedFakeSupport']]) {
+        const ending = playChapter3('abrir', 'fechar', 'grupo', 'ajudar', {
+          sinais_site: signal, alcance_link: reach, fechamento: support,
+        });
+        assert.equal(ending.phase, 'interlude');
+        assert.equal(ending.choices.length, 7);
+        assert.equal(ending.variables[key], true);
+        if (reachKey) assert.equal(ending.variables[reachKey], true);
+        assert.equal(ending.variables[supKey], true);
+      }
     }
   }
 });
 
-test('every combination of all six decisions reaches an ending and every scene is reachable', () => {
-  const expectedRoutes = { 'chapter-01': 144, 'chapter-02': 216, 'chapter-03': 486 };
+test('every combination of all seven decisions reaches an ending and every scene is reachable', () => {
+  const expectedRoutes = { 'chapter-01': 288, 'chapter-02': 432, 'chapter-03': 972 };
   for (const chapter of CHAPTER_LIST) {
     const pending = [{ progress: createInitialProgress(chapter.id), turns: 0 }];
     const visitedScenes = new Set();
@@ -259,7 +270,7 @@ test('every combination of all six decisions reaches an ending and every scene i
       assert.equal(isValidProgress(progress), true, `${chapter.id}: invalid progress at ${progress.sceneId}`);
       visitedScenes.add(progress.sceneId);
       if (progress.phase === 'interlude') {
-        assert.equal(progress.choices.length, 6, `${chapter.id}: missing decision`);
+        assert.equal(progress.choices.length, 7, `${chapter.id}: missing decision`);
         endings += 1;
         continue;
       }
@@ -343,8 +354,8 @@ test('getStageCharacters tracks protagonist on left and active interlocutor on r
   assert.equal(chars.left?.name, 'André');
   assert.equal(chars.right, null);
 
-  // Advance to line 5 where Mãe speaks
-  for (let i = 0; i < 5; i += 1) progress = advance(progress);
+  // Advance to line 3 where Mãe speaks
+  for (let i = 0; i < 3; i += 1) progress = advance(progress);
   chars = getStageCharacters(chapter, getCurrentScene(progress), progress);
   assert.equal(chars.left?.name, 'André');
   assert.equal(chars.left?.active, false);
@@ -357,4 +368,40 @@ test('getStageCharacters tracks protagonist on left and active interlocutor on r
   assert.equal(chars.left?.active, true);
   assert.equal(chars.right?.name, 'Mãe');
   assert.equal(chars.right?.active, false);
+});
+
+test('every decision across all chapters defines exactly one most appropriate option (best: true) across varied positions', () => {
+  const bestPositions = new Set();
+  for (const chapter of CHAPTER_LIST) {
+    let decisionCount = 0;
+    const chapterBestPositions = new Set();
+    for (const [sceneId, scene] of Object.entries(chapter.scenes)) {
+      for (const entry of scene.entries) {
+        if (entry.type !== 'choice') continue;
+        decisionCount += 1;
+        const bestOptions = entry.options.filter((opt) => opt.best === true);
+        assert.equal(
+          bestOptions.length,
+          1,
+          `${chapter.id}:${sceneId} must have exactly 1 option with best: true`
+        );
+        const bestIdx = entry.options.findIndex((opt) => opt.best === true);
+        bestPositions.add(bestIdx);
+        chapterBestPositions.add(bestIdx);
+      }
+    }
+    assert.equal(decisionCount, 8, `${chapter.id} has 8 decision scenes`);
+    assert.ok(chapterBestPositions.size >= 2, `${chapter.id} should not place best option at the same index in every scene`);
+  }
+  assert.deepEqual([...bestPositions].sort(), [0, 1, 2]);
+
+  let bestPath = createInitialProgress('chapter-01');
+  while (getCurrentEntry(bestPath)?.type !== 'choice') bestPath = advance(bestPath);
+  const bestResult = choose(bestPath, 'portal');
+  const bestChoiceEntry = buildDialogueHistory(bestResult).find((item) => item.type === 'choice');
+  assert.equal(bestChoiceEntry?.isBest, true);
+
+  const otherResult = choose(bestPath, 'revisar');
+  const otherChoiceEntry = buildDialogueHistory(otherResult).find((item) => item.type === 'choice');
+  assert.equal(otherChoiceEntry?.isBest, false);
 });

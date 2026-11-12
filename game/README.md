@@ -43,11 +43,11 @@ O aplicativo usa arquivos locais e não faz chamadas a APIs. Execute por HTTP lo
 
 ## Conteúdo atual
 
-**Capítulo 1 — Três anos de preparação:** André trabalha, estuda e se prepara para a prova de assistente administrativo de Aurora do Vale. Postagens não oficiais sobre a banca e o local da prova exploram o nervosismo da véspera. Seis decisões mudam suas conversas, a revisão, o descanso, a chegada à prova e o efeito de um boato no grupo. Há quatro encerramentos.
+**Capítulo 1 — Três anos de preparação:** André trabalha, estuda e se prepara para a prova de assistente administrativo de Aurora do Vale. Postagens não oficiais sobre a banca, links com domínio falso (`.xyz`), prints sobre o local da prova, correntes de áudio sem fonte e golpes de PIX pós-exame exploram o nervosismo da véspera. Sete decisões mudam suas verificações, o alerta ao grupo, o descanso, a chegada à prova e a reação a golpes. Há quatro encerramentos.
 
-**Capítulo 2 — O que chegou ao grupo:** Lia e Tomás preparam a rádio da feira cultural na Escola do Farol. A capa ambígua de um vídeo sobre o cantor fictício Ravi Maré vira um boato de morte no grupo da turma. Seis decisões permitem buscar fontes, responder à turma, levar a correção a outras salas, usar o microfone, preparar a feira e reparar um compartilhamento precipitado. Há quatro encerramentos. Ao final, a transição inicia o Capítulo 3.
+**Capítulo 2 — O que chegou ao grupo:** Lia e Tomás preparam a rádio da feira cultural na Escola do Farol. A capa ambígua de um vídeo sobre o cantor fictício Ravi Maré e um corte fora de contexto com foto antiga de hospital viram um boato de morte no grupo da turma. Sete decisões permitem checar fontes, responder à turma, levar a correção a outras salas, usar o microfone, desmontar mídias fora de contexto, reparar um compartilhamento precipitado e lidar com o engajamento em canais caça-cliques. Há quatro encerramentos. Ao final, a transição inicia o Capítulo 3.
 
-**Capítulo 3 — Quem viu meu perfil?:** Nina encontra, após a feira, um anúncio de aplicativo que promete mostrar visitantes do perfil na rede fictícia Vitra. Seis decisões tratam da origem do anúncio, das pistas do site, do pedido de acesso, dos avisos aos colegas, das cópias do link e da proteção das contas. Há quatro encerramentos.
+**Capítulo 3 — Quem viu meu perfil?:** Nina encontra, após a feira, um anúncio de aplicativo que promete mostrar visitantes do perfil na rede fictícia Vitra. Sete decisões tratam da origem do anúncio, das pistas e permissões do site, do pedido de acesso, dos avisos aos colegas, das cópias do link, da recuperação das contas e da reação a um perfil de falso suporte pedindo código de verificação em duas etapas. Há quatro encerramentos.
 
 O município, o concurso, o Instituto Vereda, a Escola do Farol e Ravi Maré são fictícios. O roteiro distingue mensagens de terceiros de publicações consultadas diretamente. Nenhum resultado de concurso real é apresentado.
 
@@ -80,6 +80,6 @@ O progresso usa a chave `cyber:save:v2`, `schemaVersion: 2` e a revisão do rote
 
 ## Estado da entrega
 
-Os testes de motor cobrem os 144 caminhos do primeiro capítulo, 216 do segundo e 486 do terceiro, além de persistência, armazenamento bloqueado, falta de espaço, backups sucessivos, progresso incoerente, transições e presença de retratos e cenários. A suíte de interface cobre leitura, teclado, modais, foco e escolhas em cinco tamanhos de tela nos três modos de texto. Execute `npm test` e `npm run test:e2e` antes de publicar. A homologação com o público-alvo e a avaliação completa com leitores de tela continuam necessárias.
+Os testes de motor cobrem os 288 caminhos do primeiro capítulo, 432 do segundo e 972 do terceiro, além de persistência, armazenamento bloqueado, falta de espaço, backups sucessivos, progresso incoerente, transições e presença de retratos e cenários. A suíte de interface cobre leitura, teclado, modais, foco e escolhas em cinco tamanhos de tela nos três modos de texto. Execute `npm test` e `npm run test:e2e` antes de publicar. A homologação com o público-alvo e a avaliação completa com leitores de tela continuam necessárias.
 
 O desenvolvimento foi auxiliado por Codex. O pedido e o uso de IA estão no [registro de prompts](../docs/planejamento/registro-prompts.md). O [documento acadêmico oficial](../README.md) está em formato Markdown. O [índice de documentação](../docs/README.md) distingue o material atual dos estudos históricos.
